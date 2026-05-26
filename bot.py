@@ -1,7 +1,10 @@
+import os
+
 from telegram import (
     Update,
     InlineKeyboardButton,
-    InlineKeyboardMarkup
+    InlineKeyboardMarkup,
+    ReplyKeyboardRemove
 )
 
 from telegram.ext import (
@@ -12,106 +15,132 @@ from telegram.ext import (
     ContextTypes
 )
 
-BOT_TOKEN = "YOUR_BOT_TOKEN"
+# =========================
+# CONFIG
+# =========================
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 CHANNEL_ID = "@dealsoffreedom"
 
 CHANNEL_LINK = "https://t.me/dealsoffreedom"
 
-
 # =========================
-# START
+# START COMMAND
 # =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
-        "🔥 Send Amazon Affiliate Link 🔥"
+        "🔥 Welcome To Deals Of Freedom 🔥\n\nSend Any Shopping Affiliate Link 🚀",
+        reply_markup=ReplyKeyboardRemove()
     )
 
+# =========================
+# ABOUT COMMAND
+# =========================
+
+async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    text = """
+🔥 Deals Of Freedom Bot
+
+✅ Amazon Affiliate
+✅ Flipkart Affiliate
+✅ Myntra
+✅ Ajio
+✅ Nykaa
+✅ Snapdeal
+
+Auto Deal Posting Bot 🚀
+"""
+
+    await update.message.reply_text(text)
 
 # =========================
-# MAIN FUNCTION
+# HANDLE LINKS
 # =========================
 
-async def post_deal(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    link = update.message.text.strip()
+    original_link = update.message.text.strip()
 
-    if "amazon." not in link and "amzn." not in link:
+    lower_link = original_link.lower()
 
-        await update.message.reply_text(
-            "❌ Send Valid Amazon Link"
-        )
+    shopping_sites = [
+        "amazon",
+        "amzn.to",
 
-        return
+        "flipkart",
+        "fkrt.in",
+        "fkrt.cc",
+        "linkredirect.in",
 
-    # =====================
-    # BUTTONS
-    # =====================
-
-    keyboard = [
-
-        [
-            InlineKeyboardButton(
-                "🛒 Buy Now",
-                url=link
-            )
-        ],
-
-        [
-            InlineKeyboardButton(
-                "📢 Join Channel",
-                url=CHANNEL_LINK
-            ),
-
-            InlineKeyboardButton(
-                "🔥 More Deals",
-                url=CHANNEL_LINK
-            )
-        ]
+        "myntra",
+        "ajio",
+        "nykaa",
+        "snapdeal"
     ]
 
-    reply_markup = InlineKeyboardMarkup(
-        keyboard
-    )
+    # VALIDATE LINK
+    if any(site in lower_link for site in shopping_sites):
 
-    # =====================
-    # SEND ONLY LINK
-    # AMAZON AUTO PREVIEW
-    # =====================
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "🛒 Buy Now",
+                    url=original_link
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    "📢 Join Channel",
+                    url=CHANNEL_LINK
+                ),
+                InlineKeyboardButton(
+                    "🔥 More Deals",
+                    url=CHANNEL_LINK
+                )
+            ]
+        ]
 
-    await context.bot.send_message(
-        chat_id=CHANNEL_ID,
-        text=link,
-        disable_web_page_preview=False
-    )
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # =====================
-    # SEND BUTTONS BELOW
-    # =====================
-
-    await context.bot.send_message(
-        chat_id=CHANNEL_ID,
-        text="""
+        message = f"""
 🔥 HOT DEAL ALERT 🔥
 
-💥 Best Price Online
-⚡ Limited Time Offer
-🚀 Hurry Up Before Stock Ends
+⚡ Best Price Online
+💥 Limited Time Offer
 
 👇 Buy From Button Below 👇
-""",
-        reply_markup=reply_markup
-    )
 
-    await update.message.reply_text(
-        "✅ Deal Posted Successfully 🚀"
-    )
+{original_link}
+"""
 
+        try:
+
+            await context.bot.send_message(
+                chat_id=CHANNEL_ID,
+                text=message,
+                reply_markup=reply_markup,
+                disable_web_page_preview=False
+            )
+
+            await update.message.reply_text(
+                "✅ Deal Posted Successfully 🚀"
+            )
+
+        except Exception as e:
+
+            await update.message.reply_text(
+                f"❌ Error:\n{e}"
+            )
+
+    else:
+
+        await update.message.reply_text(
+            "❌ Send Valid Shopping Product Link"
+        )
 
 # =========================
 # MAIN
@@ -119,28 +148,23 @@ async def post_deal(
 
 def main():
 
-    app = Application.builder().token(
-        BOT_TOKEN
-    ).build()
+    app = Application.builder().token(BOT_TOKEN).build()
 
-    app.add_handler(
-        CommandHandler(
-            "start",
-            start
-        )
-    )
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("about", about))
 
     app.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
-            post_deal
+            handle_link
         )
     )
 
-    print("Bot Running 🚀")
+    print("Bot Running Successfully 🚀")
 
     app.run_polling()
 
+# =========================
 
 if __name__ == "__main__":
     main()
