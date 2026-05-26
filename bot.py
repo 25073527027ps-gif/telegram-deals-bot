@@ -1,5 +1,6 @@
 import os
 import requests
+
 from bs4 import BeautifulSoup
 
 from telegram import (
@@ -28,17 +29,13 @@ CHANNEL_LINK = "https://t.me/dealsoffreedom"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    text = """
-🔥 Welcome To Deals Of Freedom 🔥
-
-🚀 Send Any Shopping Product Link
-"""
-
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "🔥 Send Original + Affiliate Link"
+    )
 
 
 # =========================
-# GET PRODUCT DETAILS
+# GET PRODUCT DATA
 # =========================
 
 def get_product_data(url):
@@ -47,24 +44,21 @@ def get_product_data(url):
         "User-Agent": "Mozilla/5.0"
     }
 
-    # FOLLOW REDIRECTS
     response = requests.get(
         url,
         headers=headers,
-        timeout=20,
-        allow_redirects=True
+        timeout=20
     )
-
-    final_url = response.url
 
     soup = BeautifulSoup(
         response.text,
         "html.parser"
     )
 
-    # TITLE
-
     title = "🔥 HOT DEAL ALERT 🔥"
+    image = None
+
+    # TITLE
 
     title_tag = soup.find(
         "meta",
@@ -76,8 +70,6 @@ def get_product_data(url):
 
     # IMAGE
 
-    image = None
-
     image_tag = soup.find(
         "meta",
         property="og:image"
@@ -86,7 +78,7 @@ def get_product_data(url):
     if image_tag:
         image = image_tag.get("content")
 
-    return title, image, final_url
+    return title, image
 
 
 # =========================
@@ -100,18 +92,39 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not text:
         return
 
-    link = text.strip()
-
-    if "http" not in link.lower():
-
-        await update.message.reply_text(
-            "❌ Send Valid Shopping Product Link"
-        )
-        return
-
     try:
 
-        title, image, final_url = get_product_data(link)
+        lines = text.splitlines()
+
+        original_link = ""
+        affiliate_link = ""
+
+        for line in lines:
+
+            if "ORIGINAL:" in line:
+                original_link = line.replace(
+                    "ORIGINAL:",
+                    ""
+                ).strip()
+
+            if "AFFILIATE:" in line:
+                affiliate_link = line.replace(
+                    "AFFILIATE:",
+                    ""
+                ).strip()
+
+        if not original_link or not affiliate_link:
+
+            await update.message.reply_text(
+                "❌ Format Wrong"
+            )
+            return
+
+        # GET PRODUCT DETAILS
+
+        title, image = get_product_data(
+            original_link
+        )
 
         caption = f"""
 🔥 HOT DEAL ALERT 🔥
@@ -126,11 +139,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 👇 Buy From Button Below 👇
 """
 
+        # BUTTONS
+
         keyboard = [
             [
                 InlineKeyboardButton(
                     "🛒 Buy Now",
-                    url=link
+                    url=affiliate_link
                 )
             ],
             [
@@ -149,7 +164,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             keyboard
         )
 
-        # SEND PHOTO POST
+        # SEND POST
 
         if image:
 
@@ -177,7 +192,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(e)
 
         await update.message.reply_text(
-            "❌ Error While Posting Deal"
+            "❌ Error"
         )
 
 
@@ -192,7 +207,10 @@ def main():
     ).build()
 
     app.add_handler(
-        CommandHandler("start", start)
+        CommandHandler(
+            "start",
+            start
+        )
     )
 
     app.add_handler(
