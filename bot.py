@@ -2,7 +2,7 @@ import os
 import time
 from telegram import Bot
 
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("8601951285:AAE09-x_4Peuh3WSJN68U21iGFKsCuVnLLE")
 
 bot = Bot(token=TOKEN)
 
