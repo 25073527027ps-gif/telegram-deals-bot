@@ -18,24 +18,32 @@ TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = "@dealsoffreedom"
 
 # ==========================================
-# START
+# START COMMAND
 # ==========================================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
-        "🔥 Send Amazon Affiliate Link 🔥"
+        "🔥 Send Any Shopping Product Link 🔥"
     )
 
 # ==========================================
-# HANDLE AMAZON LINKS
+# HANDLE LINKS
 # ==========================================
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     link = update.message.text.strip()
 
-    if "amazon" in link or "amzn.to" in link:
+    # ACCEPT ALL SHOPPING LINKS
+    if (
+        "amazon" in link
+        or "amzn.to" in link
+        or "flipkart" in link
+        or "myntra" in link
+        or "ajio" in link
+        or "meesho" in link
+    ):
 
         # BUTTONS
         keyboard = [
@@ -60,27 +68,32 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # DEAL MESSAGE
-        message = f"""
-🔥 HOT AMAZON DEAL 🔥
+        # CLEAN MESSAGE
+        message = """
+🔥 HOT DEAL ALERT 🔥
 
 💥 Limited Time Offer
-⚡ Best Price Available
+⚡ Best Price Online
 
+✅ Trending Product
 ✅ Fast Delivery
-✅ Trusted Product
-✅ Amazon Special Deal
+✅ Huge Discount Live
 
-👇 Product Link Below 👇
-
-{link}
+👇 Buy From Button Below 👇
 """
 
-        # SEND MESSAGE WITH BUTTONS
+        # SEND MESSAGE
         await context.bot.send_message(
             chat_id=CHANNEL_ID,
             text=message,
             reply_markup=reply_markup,
+            disable_web_page_preview=True
+        )
+
+        # SEND PRODUCT PREVIEW SEPARATELY
+        await context.bot.send_message(
+            chat_id=CHANNEL_ID,
+            text=link,
             disable_web_page_preview=False
         )
 
@@ -91,7 +104,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
 
         await update.message.reply_text(
-            "❌ Please Send Valid Amazon Link"
+            "❌ Send Valid Shopping Product Link"
         )
 
 # ==========================================
@@ -106,6 +119,6 @@ app.add_handler(
     MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link)
 )
 
-print("🚀 Amazon Deals Bot Running...")
+print("🚀 Deals Bot Running...")
 
 app.run_polling()
