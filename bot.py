@@ -32,7 +32,7 @@ CHANNEL_LINK = "https://t.me/dealsoffreedom"
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
-        "🔥 Welcome To Deals Of Freedom 🔥\n\nSend Any Shopping Affiliate Link 🚀",
+        "🔥 Welcome To Deals Of Freedom 🔥\n\nSend Amazon Affiliate Link 🚀",
         reply_markup=ReplyKeyboardRemove()
     )
 
@@ -45,20 +45,18 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = """
 🔥 Deals Of Freedom Bot
 
-✅ Amazon Affiliate
-✅ Flipkart Affiliate
-✅ Myntra
-✅ Ajio
-✅ Nykaa
-✅ Snapdeal
+✅ Amazon Affiliate Auto Posting
+✅ Product Photo
+✅ Product Details
+✅ Buy Now Button
 
-Auto Deal Posting Bot 🚀
+🚀 Auto Deal Posting Bot
 """
 
     await update.message.reply_text(text)
 
 # =========================
-# HANDLE LINKS
+# HANDLE AMAZON LINKS
 # =========================
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -67,23 +65,8 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     lower_link = original_link.lower()
 
-    shopping_sites = [
-        "amazon",
-        "amzn.to",
-
-        "flipkart",
-        "fkrt.in",
-        "fkrt.cc",
-        "linkredirect.in",
-
-        "myntra",
-        "ajio",
-        "nykaa",
-        "snapdeal"
-    ]
-
-    # VALIDATE LINK
-    if any(site in lower_link for site in shopping_sites):
+    # AMAZON VALIDATION
+    if "amazon" in lower_link or "amzn.to" in lower_link:
 
         keyboard = [
             [
@@ -120,11 +103,22 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         try:
 
+            # IMPORTANT:
+            # LINK ONLY MESSAGE
+            # Telegram automatically fetches
+            # product image + details preview
+
+            await context.bot.send_message(
+                chat_id=CHANNEL_ID,
+                text=original_link,
+                disable_web_page_preview=False
+            )
+
+            # DEAL MESSAGE
             await context.bot.send_message(
                 chat_id=CHANNEL_ID,
                 text=message,
-                reply_markup=reply_markup,
-                disable_web_page_preview=False
+                reply_markup=reply_markup
             )
 
             await update.message.reply_text(
@@ -140,7 +134,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
 
         await update.message.reply_text(
-            "❌ Send Valid Shopping Product Link"
+            "❌ Send Valid Amazon Affiliate Link"
         )
 
 # =========================
