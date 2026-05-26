@@ -1,5 +1,4 @@
 import os
-import requests
 
 from telegram import (
     Update,
@@ -46,20 +45,18 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = """
 🔥 Deals Of Freedom Bot
 
-✅ Amazon Affiliate Preview
-✅ Auto Product Details
-✅ Auto Product Image
+✅ Amazon Affiliate Support
+✅ Product Preview
 ✅ Buy Now Button
-✅ Join Channel Button
-✅ More Deals Button
+✅ Auto Deal Post
 
-🚀 Fully Automatic Deal Bot
+🚀 Fully Automatic Bot
 """
 
     await update.message.reply_text(text)
 
 # =========================
-# HANDLE AMAZON LINK
+# HANDLE LINK
 # =========================
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -69,7 +66,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lower_link = original_link.lower()
 
     # =====================
-    # VALIDATE AMAZON LINK
+    # VALID AMAZON LINK
     # =====================
 
     if "amazon." not in lower_link and "amzn.to" not in lower_link:
@@ -81,41 +78,6 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # =====================
-    # CLEAN LINK
-    # KEEP AFFILIATE TAG
-    # =====================
-
-    clean_link = original_link
-
-    if "&ref=" in clean_link:
-        clean_link = clean_link.split("&ref=")[0]
-
-    if "?ref=" in clean_link:
-        clean_link = clean_link.split("?ref=")[0]
-
-    # =====================
-    # EXPAND SHORT LINK
-    # =====================
-
-    expanded_link = clean_link
-
-    if "amzn.to" in clean_link:
-
-        try:
-
-            response = requests.get(
-                clean_link,
-                allow_redirects=True,
-                timeout=10
-            )
-
-            expanded_link = response.url
-
-        except:
-
-            expanded_link = clean_link
-
-    # =====================
     # BUTTONS
     # =====================
 
@@ -124,7 +86,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [
             InlineKeyboardButton(
                 "🛒 Buy Now",
-                url=clean_link
+                url=original_link
             )
         ],
 
@@ -141,30 +103,15 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
     ]
 
-    reply_markup = InlineKeyboardMarkup(
-        keyboard
-    )
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-    try:
+    # =====================
+    # MAIN DEAL MESSAGE
+    # =====================
 
-        # =====================
-        # SEND AMAZON PREVIEW
-        # =====================
+    message = f"""
+{original_link}
 
-        await context.bot.send_message(
-            chat_id=CHANNEL_ID,
-            text=expanded_link,
-            disable_web_page_preview=False
-        )
-
-        # =====================
-        # SEND BUTTONS
-        # =====================
-
-        await context.bot.send_message(
-            chat_id=CHANNEL_ID,
-
-            text="""
 🔥 HOT DEAL ALERT 🔥
 
 💥 Best Price Online
@@ -172,9 +119,15 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 🚀 Hurry Up Before Stock Ends
 
 👇 Buy From Button Below 👇
-""",
+"""
 
-            reply_markup=reply_markup
+    try:
+
+        await context.bot.send_message(
+            chat_id=CHANNEL_ID,
+            text=message,
+            reply_markup=reply_markup,
+            disable_web_page_preview=False
         )
 
         await update.message.reply_text(
@@ -193,22 +146,14 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
 
-    app = Application.builder().token(
-        BOT_TOKEN
-    ).build()
+    app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(
-        CommandHandler(
-            "start",
-            start
-        )
+        CommandHandler("start", start)
     )
 
     app.add_handler(
-        CommandHandler(
-            "about",
-            about
-        )
+        CommandHandler("about", about)
     )
 
     app.add_handler(
