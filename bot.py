@@ -26,7 +26,7 @@ CHANNEL_ID = "@dealsoffreedom"
 CHANNEL_LINK = "https://t.me/dealsoffreedom"
 
 # =========================
-# START COMMAND
+# START
 # =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -37,26 +37,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # =========================
-# ABOUT COMMAND
-# =========================
-
-async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    text = """
-🔥 Deals Of Freedom Bot
-
-✅ Amazon Product Preview
-✅ Product Photo
-✅ Product Details
-✅ Buy Now Button
-
-🚀 Auto Deal Posting Bot
-"""
-
-    await update.message.reply_text(text)
-
-# =========================
-# HANDLE AMAZON LINK
+# HANDLE LINK
 # =========================
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -65,8 +46,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     lower_link = original_link.lower()
 
-    # AMAZON LINK CHECK
-    if "amazon" in lower_link or "amzn.to" in lower_link:
+    if "amazon" in lower_link:
 
         keyboard = [
             [
@@ -91,21 +71,14 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         try:
 
-            # STEP 1
-            # SEND ONLY AMAZON LINK
-            # Telegram automatically fetches:
-            # ✅ Product Photo
-            # ✅ Product Details
-
+            # PRODUCT PREVIEW
             await context.bot.send_message(
                 chat_id=CHANNEL_ID,
                 text=original_link,
                 disable_web_page_preview=False
             )
 
-            # STEP 2
-            # SEND BUTTONS ONLY
-
+            # BUTTON MESSAGE
             await context.bot.send_message(
                 chat_id=CHANNEL_ID,
                 text="""
@@ -133,7 +106,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
 
         await update.message.reply_text(
-            "❌ Send Valid Amazon Affiliate Link"
+            "❌ Send Valid Amazon Link"
         )
 
 # =========================
@@ -145,7 +118,6 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("about", about))
 
     app.add_handler(
         MessageHandler(
