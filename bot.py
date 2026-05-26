@@ -1,5 +1,5 @@
 import os
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -8,52 +8,94 @@ from telegram.ext import (
     filters,
 )
 
+# =========================================
+# BOT SETTINGS
+# =========================================
+
 TOKEN = os.getenv("BOT_TOKEN")
 
-keyboard = [
-    ["📷 Send Photo"],
-    ["🛒 Buy Now"],
-    ["🔗 Affiliate Link"],
-    ["ℹ️ About Bot"]
-]
+CHANNEL_ID = "@dealsoffreedom"
 
-reply_markup = ReplyKeyboardMarkup(
-    keyboard,
-    resize_keyboard=True
-)
+# =========================================
+# START COMMAND
+# =========================================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     await update.message.reply_text(
-        "🤖 Welcome To My Bot!",
-        reply_markup=reply_markup
+        "🔥 Send Any Amazon Affiliate Link 🔥"
     )
 
-async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
+# =========================================
+# HANDLE AMAZON LINKS
+# =========================================
 
-    if text == "📷 Send Photo":
-        await update.message.reply_text("📸 Please send your photo")
+async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    elif text == "🛒 Buy Now":
-        await update.message.reply_text(
-            "🛍️ Buy Here:\nhttps://amzn.to/YOUR_LINK"
+    link = update.message.text.strip()
+
+    # AMAZON LINK CHECK
+    if "amazon" in link or "amzn.to" in link:
+
+        # ATTRACTIVE DEAL MESSAGE
+        message = f"""
+🔥 MEGA DEAL ALERT 🔥
+
+🛒 Best Product Available
+💥 Huge Discount Live
+⚡ Limited Time Offer
+
+━━━━━━━━━━━━━━━
+
+✅ Trusted Amazon Product
+✅ Fast Delivery
+✅ Best Online Price
+
+👉 Buy Now:
+{link}
+
+━━━━━━━━━━━━━━━
+
+⚠️ Hurry Before Price Increase
+📢 Join: https://t.me/dealsoffreedom
+"""
+
+        # SEND TO CHANNEL
+        await context.bot.send_message(
+            chat_id=CHANNEL_ID,
+            text=message,
+            disable_web_page_preview=False
         )
 
-    elif text == "🔗 Affiliate Link":
+        # SUCCESS REPLY
         await update.message.reply_text(
-            "🔗 Your Affiliate Link:\nhttps://amzn.to/YOUR_LINK"
+            "✅ Deal Posted To Channel Successfully 🚀"
         )
 
-    elif text == "ℹ️ About Bot":
+    else:
+
         await update.message.reply_text(
-            "🤖 This is Affiliate Deals Bot"
+            "❌ Please Send Valid Amazon Affiliate Link"
         )
+
+# =========================================
+# MAIN BOT
+# =========================================
 
 app = ApplicationBuilder().token(TOKEN).build()
 
+# COMMANDS
 app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.TEXT, buttons))
 
-print("Bot is running...")
+# MESSAGE HANDLER
+app.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, handle_link)
+)
+
+# =========================================
+# RUN BOT
+# =========================================
+
+print("🚀 Amazon Deals Bot Running...")
 
 app.run_polling()
