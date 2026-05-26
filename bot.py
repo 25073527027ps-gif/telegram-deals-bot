@@ -1,4 +1,5 @@
 import os
+
 from telegram import (
     Update,
     InlineKeyboardButton,
@@ -31,38 +32,29 @@ CHANNEL_LINK = "https://t.me/dealsoffreedom"
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
-        "🔥 Welcome To Deals Of Freedom 🔥\n\nSend Any Shopping Product Link 🚀",
+        "🔥 Welcome To Deals Of Freedom 🔥\n\nSend Shopping Product Link 🚀",
         reply_markup=ReplyKeyboardRemove()
     )
 
 # =========================
-# ABOUT COMMAND
+# ABOUT
 # =========================
 
 async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    text = """
-🔥 Deals Of Freedom Bot
-
-✅ Amazon
-✅ Flipkart
-✅ Myntra
-✅ Ajio
-✅ Nykaa
-✅ Snapdeal
-
-Product links automatically channel par post honge 🚀
-"""
-
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "🔥 Deals Of Freedom Bot\n\nAuto Deal Posting Bot 🚀"
+    )
 
 # =========================
-# HANDLE PRODUCT LINKS
+# HANDLE LINKS
 # =========================
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    link = update.message.text.strip().lower()
+    original_link = update.message.text.strip()
+
+    lower_link = original_link.lower()
 
     shopping_sites = [
         "amazon",
@@ -75,13 +67,14 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "snapdeal"
     ]
 
-    if any(site in link for site in shopping_sites):
+    # CHECK VALID LINK
+    if any(site in lower_link for site in shopping_sites):
 
         keyboard = [
             [
                 InlineKeyboardButton(
                     "🛒 Buy Now",
-                    url=update.message.text.strip()
+                    url=original_link
                 )
             ],
             [
@@ -106,7 +99,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 👇 Buy From Button Below 👇
 
-{update.message.text.strip()}
+{original_link}
 """
 
         try:
@@ -143,6 +136,7 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
+
     app.add_handler(CommandHandler("about", about))
 
     app.add_handler(
