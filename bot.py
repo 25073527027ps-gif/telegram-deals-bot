@@ -12,10 +12,6 @@ from telegram.ext import (
     ContextTypes
 )
 
-# ==============================
-# CONFIG
-# ==============================
-
 BOT_TOKEN = "YOUR_BOT_TOKEN"
 
 CHANNEL_ID = "@dealsoffreedom"
@@ -23,58 +19,39 @@ CHANNEL_ID = "@dealsoffreedom"
 CHANNEL_LINK = "https://t.me/dealsoffreedom"
 
 
-# ==============================
-# START COMMAND
-# ==============================
+# =========================
+# START
+# =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    text = """
-🔥 Welcome To Deals Of Freedom 🔥
-
-✅ Send Amazon Affiliate Link
-✅ Automatic Product Preview
-✅ Buy Now Button
-✅ Professional Deal Post
-
-🚀 Example:
-
-https://amzn.in/xxxxx
-"""
-
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "🔥 Send Amazon Affiliate Link 🔥"
+    )
 
 
-# ==============================
-# AMAZON LINK HANDLER
-# ==============================
+# =========================
+# MAIN FUNCTION
+# =========================
 
-async def amazon_post(
+async def post_deal(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
 
     link = update.message.text.strip()
 
-    # ==========================
-    # ONLY AMAZON LINKS ALLOWED
-    # ==========================
-
-    if (
-        "amazon." not in link
-        and
-        "amzn." not in link
-    ):
+    if "amazon." not in link and "amzn." not in link:
 
         await update.message.reply_text(
-            "❌ Only Amazon Affiliate Links Allowed"
+            "❌ Send Valid Amazon Link"
         )
 
         return
 
-    # ==========================
+    # =====================
     # BUTTONS
-    # ==========================
+    # =====================
 
     keyboard = [
 
@@ -102,11 +79,24 @@ async def amazon_post(
         keyboard
     )
 
-    # ==========================
-    # PROFESSIONAL CAPTION
-    # ==========================
+    # =====================
+    # SEND ONLY LINK
+    # AMAZON AUTO PREVIEW
+    # =====================
 
-    text = f"""
+    await context.bot.send_message(
+        chat_id=CHANNEL_ID,
+        text=link,
+        disable_web_page_preview=False
+    )
+
+    # =====================
+    # SEND BUTTONS BELOW
+    # =====================
+
+    await context.bot.send_message(
+        chat_id=CHANNEL_ID,
+        text="""
 🔥 HOT DEAL ALERT 🔥
 
 💥 Best Price Online
@@ -114,37 +104,18 @@ async def amazon_post(
 🚀 Hurry Up Before Stock Ends
 
 👇 Buy From Button Below 👇
+""",
+        reply_markup=reply_markup
+    )
 
-{link}
-"""
-
-    # ==========================
-    # SEND TO CHANNEL
-    # ==========================
-
-    try:
-
-        await context.bot.send_message(
-            chat_id=CHANNEL_ID,
-            text=text,
-            reply_markup=reply_markup,
-            disable_web_page_preview=False
-        )
-
-        await update.message.reply_text(
-            "✅ Amazon Deal Posted Successfully 🚀"
-        )
-
-    except Exception as e:
-
-        await update.message.reply_text(
-            f"❌ Error:\n{e}"
-        )
+    await update.message.reply_text(
+        "✅ Deal Posted Successfully 🚀"
+    )
 
 
-# ==============================
-# MAIN FUNCTION
-# ==============================
+# =========================
+# MAIN
+# =========================
 
 def main():
 
@@ -162,7 +133,7 @@ def main():
     app.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
-            amazon_post
+            post_deal
         )
     )
 
@@ -170,10 +141,6 @@ def main():
 
     app.run_polling()
 
-
-# ==============================
-# RUN
-# ==============================
 
 if __name__ == "__main__":
     main()
