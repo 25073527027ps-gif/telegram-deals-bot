@@ -26,7 +26,7 @@ CHANNEL_ID = "@dealsoffreedom"
 CHANNEL_LINK = "https://t.me/dealsoffreedom"
 
 # =========================
-# START COMMAND
+# START
 # =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -37,7 +37,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # =========================
-# ABOUT COMMAND
+# ABOUT
 # =========================
 
 async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -46,12 +46,13 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
 🔥 Deals Of Freedom Bot
 
 ✅ Amazon Affiliate Auto Posting
-✅ Auto Product Preview
-✅ Buy Now Button
-✅ Join Channel Button
-✅ More Deals Button
+✅ Product Preview
+✅ Auto Buttons
+✅ Buy Now
+✅ Join Channel
+✅ More Deals
 
-🚀 Fully Automatic Deal Bot
+🚀 Fully Automatic Bot
 """
 
     await update.message.reply_text(text)
@@ -79,18 +80,18 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # =====================
-    # SHORT LINK CLEANER
+    # CLEAN LINK
+    # KEEP AFFILIATE TAG
     # =====================
 
     clean_link = original_link
 
-    # remove everything after ?
-    if "?" in clean_link:
-        clean_link = clean_link.split("?")[0]
+    # remove only ref part
+    if "&ref=" in clean_link:
+        clean_link = clean_link.split("&ref=")[0]
 
-    # remove everything after /ref=
-    if "/ref=" in clean_link:
-        clean_link = clean_link.split("/ref=")[0]
+    if "?ref=" in clean_link:
+        clean_link = clean_link.split("?ref=")[0]
 
     # =====================
     # BUTTONS
@@ -118,12 +119,14 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
     ]
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = InlineKeyboardMarkup(
+        keyboard
+    )
 
     try:
 
         # =====================
-        # SEND AMAZON PREVIEW
+        # AMAZON AUTO PREVIEW
         # =====================
 
         await context.bot.send_message(
@@ -133,7 +136,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         # =====================
-        # SEND BUTTON MESSAGE
+        # BUTTON MESSAGE
         # =====================
 
         await context.bot.send_message(
