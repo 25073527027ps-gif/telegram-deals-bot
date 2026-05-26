@@ -1,4 +1,5 @@
 import os
+import requests
 
 from telegram import (
     Update,
@@ -45,20 +46,20 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = """
 🔥 Deals Of Freedom Bot
 
-✅ Amazon Affiliate Auto Posting
-✅ Product Preview
-✅ Auto Buttons
-✅ Buy Now
-✅ Join Channel
-✅ More Deals
+✅ Amazon Affiliate Preview
+✅ Auto Product Details
+✅ Auto Product Image
+✅ Buy Now Button
+✅ Join Channel Button
+✅ More Deals Button
 
-🚀 Fully Automatic Bot
+🚀 Fully Automatic Deal Bot
 """
 
     await update.message.reply_text(text)
 
 # =========================
-# HANDLE AMAZON LINKS
+# HANDLE AMAZON LINK
 # =========================
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -68,7 +69,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lower_link = original_link.lower()
 
     # =====================
-    # AMAZON VALIDATION
+    # VALIDATE AMAZON LINK
     # =====================
 
     if "amazon." not in lower_link and "amzn.to" not in lower_link:
@@ -86,12 +87,33 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     clean_link = original_link
 
-    # remove only ref part
     if "&ref=" in clean_link:
         clean_link = clean_link.split("&ref=")[0]
 
     if "?ref=" in clean_link:
         clean_link = clean_link.split("?ref=")[0]
+
+    # =====================
+    # EXPAND SHORT LINK
+    # =====================
+
+    expanded_link = clean_link
+
+    if "amzn.to" in clean_link:
+
+        try:
+
+            response = requests.get(
+                clean_link,
+                allow_redirects=True,
+                timeout=10
+            )
+
+            expanded_link = response.url
+
+        except:
+
+            expanded_link = clean_link
 
     # =====================
     # BUTTONS
@@ -126,17 +148,17 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
 
         # =====================
-        # AMAZON AUTO PREVIEW
+        # SEND AMAZON PREVIEW
         # =====================
 
         await context.bot.send_message(
             chat_id=CHANNEL_ID,
-            text=clean_link,
+            text=expanded_link,
             disable_web_page_preview=False
         )
 
         # =====================
-        # BUTTON MESSAGE
+        # SEND BUTTONS
         # =====================
 
         await context.bot.send_message(
