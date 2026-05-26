@@ -31,8 +31,14 @@ CHANNEL_LINK = "https://t.me/dealsoffreedom"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
+    text = """
+🔥 Welcome To Deals Of Freedom 🔥
+
+Send Amazon Affiliate Product Link 🚀
+"""
+
     await update.message.reply_text(
-        "🔥 Welcome To Deals Of Freedom 🔥\n\nSend Amazon Affiliate Link 🚀",
+        text,
         reply_markup=ReplyKeyboardRemove()
     )
 
@@ -46,14 +52,39 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
 🔥 Deals Of Freedom Bot
 
 ✅ Amazon Affiliate Support
-✅ Product Preview
-✅ Buy Now Button
-✅ Auto Deal Post
+✅ Auto Deal Posting
+✅ Buy Now Buttons
+✅ Professional Deal Format
 
-🚀 Fully Automatic Bot
+🚀 Bot Running Successfully
 """
 
     await update.message.reply_text(text)
+
+# =========================
+# EXTRACT PRODUCT NAME
+# =========================
+
+def get_product_name(link):
+
+    try:
+
+        # Amazon link name extract
+        if "/dp/" in link:
+
+            name = link.split("/dp/")[0]
+
+            name = name.split("/")[-1]
+
+            name = name.replace("-", " ")
+
+            return name.title()
+
+        return "Hot Deal Product"
+
+    except:
+
+        return "Hot Deal Product"
 
 # =========================
 # HANDLE LINK
@@ -66,7 +97,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lower_link = original_link.lower()
 
     # =====================
-    # VALID AMAZON LINK
+    # VALIDATION
     # =====================
 
     if "amazon." not in lower_link and "amzn.to" not in lower_link:
@@ -76,6 +107,12 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         return
+
+    # =====================
+    # PRODUCT NAME
+    # =====================
+
+    product_name = get_product_name(original_link)
 
     # =====================
     # BUTTONS
@@ -106,13 +143,14 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # =====================
-    # MAIN DEAL MESSAGE
+    # MESSAGE
     # =====================
 
     message = f"""
-{original_link}
-
 🔥 HOT DEAL ALERT 🔥
+
+🛍 Product:
+{product_name}
 
 💥 Best Price Online
 ⚡ Limited Time Offer
@@ -121,13 +159,24 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 👇 Buy From Button Below 👇
 """
 
+    # =====================
+    # SEND TO CHANNEL
+    # =====================
+
     try:
 
+        # First send affiliate link separately
+        await context.bot.send_message(
+            chat_id=CHANNEL_ID,
+            text=original_link,
+            disable_web_page_preview=False
+        )
+
+        # Then send formatted deal
         await context.bot.send_message(
             chat_id=CHANNEL_ID,
             text=message,
-            reply_markup=reply_markup,
-            disable_web_page_preview=False
+            reply_markup=reply_markup
         )
 
         await update.message.reply_text(
@@ -163,7 +212,7 @@ def main():
         )
     )
 
-    print("Bot Running Successfully 🚀")
+    print("🚀 Bot Running Successfully")
 
     app.run_polling()
 
