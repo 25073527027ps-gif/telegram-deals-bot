@@ -32,19 +32,30 @@ CHANNEL_LINK = "https://t.me/dealsoffreedom"
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
-        "🔥 Welcome To Deals Of Freedom 🔥\n\nSend Shopping Product Link 🚀",
+        "🔥 Welcome To Deals Of Freedom 🔥\n\nSend Any Shopping Affiliate Link 🚀",
         reply_markup=ReplyKeyboardRemove()
     )
 
 # =========================
-# ABOUT
+# ABOUT COMMAND
 # =========================
 
 async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    await update.message.reply_text(
-        "🔥 Deals Of Freedom Bot\n\nAuto Deal Posting Bot 🚀"
-    )
+    text = """
+🔥 Deals Of Freedom Bot
+
+✅ Amazon Affiliate
+✅ Flipkart Affiliate
+✅ Myntra
+✅ Ajio
+✅ Nykaa
+✅ Snapdeal
+
+Auto Deal Posting Bot 🚀
+"""
+
+    await update.message.reply_text(text)
 
 # =========================
 # HANDLE LINKS
@@ -59,15 +70,19 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     shopping_sites = [
         "amazon",
         "amzn.to",
+
         "flipkart",
         "fkrt.in",
+        "fkrt.cc",
+        "linkredirect.in",
+
         "myntra",
         "ajio",
         "nykaa",
         "snapdeal"
     ]
 
-    # CHECK VALID LINK
+    # VALIDATE LINK
     if any(site in lower_link for site in shopping_sites):
 
         keyboard = [
@@ -91,7 +106,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        text = f"""
+        message = f"""
 🔥 HOT DEAL ALERT 🔥
 
 ⚡ Best Price Online
@@ -106,7 +121,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await context.bot.send_message(
                 chat_id=CHANNEL_ID,
-                text=text,
+                text=message,
                 reply_markup=reply_markup,
                 disable_web_page_preview=False
             )
@@ -136,7 +151,6 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-
     app.add_handler(CommandHandler("about", about))
 
     app.add_handler(
@@ -146,7 +160,7 @@ def main():
         )
     )
 
-    print("Bot Running Successfully...")
+    print("Bot Running Successfully 🚀")
 
     app.run_polling()
 
