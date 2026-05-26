@@ -3,6 +3,7 @@ from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup
 )
+
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -11,120 +12,157 @@ from telegram.ext import (
     ContextTypes
 )
 
+# ==============================
+# CONFIG
+# ==============================
+
 BOT_TOKEN = "YOUR_BOT_TOKEN"
+
 CHANNEL_ID = "@dealsoffreedom"
 
-# =========================
+CHANNEL_LINK = "https://t.me/dealsoffreedom"
+
+
+# ==============================
 # START COMMAND
-# =========================
+# ==============================
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = """
 🔥 Welcome To Deals Of Freedom 🔥
 
-Send Any Shopping Product Link 🚀
-
-✅ Amazon Affiliate Direct Link
-✅ EarnKaro / Flipkart Link
+✅ Send Amazon Affiliate Link
+✅ Automatic Product Preview
 ✅ Buy Now Button
+✅ Professional Deal Post
+
+🚀 Example:
+
+https://amzn.in/xxxxx
 """
 
     await update.message.reply_text(text)
 
 
-# =========================
-# MAIN LINK HANDLER
-# =========================
-async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ==============================
+# AMAZON LINK HANDLER
+# ==============================
+
+async def amazon_post(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
 
     link = update.message.text.strip()
 
-    # =========================
+    # ==========================
+    # ONLY AMAZON LINKS ALLOWED
+    # ==========================
+
+    if (
+        "amazon." not in link
+        and
+        "amzn." not in link
+    ):
+
+        await update.message.reply_text(
+            "❌ Only Amazon Affiliate Links Allowed"
+        )
+
+        return
+
+    # ==========================
     # BUTTONS
-    # =========================
+    # ==========================
+
     keyboard = [
+
         [
             InlineKeyboardButton(
                 "🛒 Buy Now",
                 url=link
             )
         ],
+
         [
             InlineKeyboardButton(
                 "📢 Join Channel",
-                url="https://t.me/dealsoffreedom"
+                url=CHANNEL_LINK
             ),
 
             InlineKeyboardButton(
                 "🔥 More Deals",
-                url="https://t.me/dealsoffreedom"
+                url=CHANNEL_LINK
             )
         ]
     ]
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = InlineKeyboardMarkup(
+        keyboard
+    )
 
-    # =========================
-    # AMAZON LINKS
-    # =========================
-    if "amazon." in link:
+    # ==========================
+    # PROFESSIONAL CAPTION
+    # ==========================
 
-        # Amazon preview automatically aayega
-        await context.bot.send_message(
-            chat_id=CHANNEL_ID,
-            text=link,
-            reply_markup=reply_markup,
-            disable_web_page_preview=False
-        )
-
-    # =========================
-    # FLIPKART / EARNKARO
-    # =========================
-    else:
-
-        caption = f"""
+    text = f"""
 🔥 HOT DEAL ALERT 🔥
-
-🛍 Product:
-Hot Deal Product
 
 💥 Best Price Online
 ⚡ Limited Time Offer
 🚀 Hurry Up Before Stock Ends
 
 👇 Buy From Button Below 👇
+
+{link}
 """
 
-        # Flipkart / EarnKaro
-        # Telegram preview automatically show karega
+    # ==========================
+    # SEND TO CHANNEL
+    # ==========================
+
+    try:
+
         await context.bot.send_message(
             chat_id=CHANNEL_ID,
-            text=f"{caption}\n\n{link}",
+            text=text,
             reply_markup=reply_markup,
             disable_web_page_preview=False
         )
 
-    # SUCCESS MESSAGE
-    await update.message.reply_text(
-        "✅ Deal Posted Successfully 🚀"
-    )
+        await update.message.reply_text(
+            "✅ Amazon Deal Posted Successfully 🚀"
+        )
+
+    except Exception as e:
+
+        await update.message.reply_text(
+            f"❌ Error:\n{e}"
+        )
 
 
-# =========================
+# ==============================
 # MAIN FUNCTION
-# =========================
+# ==============================
+
 def main():
 
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = Application.builder().token(
+        BOT_TOKEN
+    ).build()
 
     app.add_handler(
-        CommandHandler("start", start)
+        CommandHandler(
+            "start",
+            start
+        )
     )
 
     app.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
-            handle_link
+            amazon_post
         )
     )
 
@@ -133,8 +171,9 @@ def main():
     app.run_polling()
 
 
-# =========================
-# RUN BOT
-# =========================
+# ==============================
+# RUN
+# ==============================
+
 if __name__ == "__main__":
     main()
