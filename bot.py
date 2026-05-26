@@ -94,13 +94,17 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     link = update.message.text.strip()
 
     shopping_sites = [
-        "amazon",
-        "flipkart",
-        "myntra",
-        "ajio",
-        "meesho",
-        "nykaa",
-        "snapdeal"
+        shopping_sites = [
+    "amazon",
+    "amzn.to",
+    "flipkart",
+    "fkrt.in",
+    "myntra",
+    "ajio",
+    "meesho",
+    "nykaa",
+    "snapdeal"
+]
     ]
 
     if any(site in link.lower() for site in shopping_sites):
