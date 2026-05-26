@@ -28,7 +28,7 @@ CHANNEL_LINK = "https://t.me/dealsoffreedom"
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
-        "Send:\n\n1st Line = Short Affiliate Link\n2nd Line = Long Amazon Link",
+        "Send:\n\n1st Line = Short Affiliate Link\n2nd Line = Long Amazon Product Link",
         reply_markup=ReplyKeyboardRemove()
     )
 
@@ -57,7 +57,7 @@ def get_product_name(link):
         return "Hot Deal Product"
 
 # =========================
-# HANDLE LINK
+# HANDLE MESSAGE
 # =========================
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -78,7 +78,35 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     long_link = lines[1].strip()
 
+    # =====================
+    # VALIDATION
+    # =====================
+
+    if "amzn.to" not in short_link.lower():
+
+        await update.message.reply_text(
+            "❌ First line must be short Amazon affiliate link"
+        )
+
+        return
+
+    if "amazon." not in long_link.lower():
+
+        await update.message.reply_text(
+            "❌ Second line must be full Amazon link"
+        )
+
+        return
+
+    # =====================
+    # PRODUCT NAME
+    # =====================
+
     product_name = get_product_name(long_link)
+
+    # =====================
+    # BUTTONS
+    # =====================
 
     keyboard = [
 
@@ -105,8 +133,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # =====================
-    # STEP 1
-    # SEND LONG LINK FOR PREVIEW
+    # SEND PREVIEW MESSAGE
     # =====================
 
     await context.bot.send_message(
@@ -116,11 +143,10 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     # =====================
-    # STEP 2
-    # SEND DEAL MESSAGE
+    # DEAL MESSAGE
     # =====================
 
-    message = f"""
+    deal_message = f"""
 🔥 HOT DEAL ALERT 🔥
 
 🛍 Product:
@@ -135,11 +161,19 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 🔗 {short_link}
 """
 
+    # =====================
+    # SEND DEAL MESSAGE
+    # =====================
+
     await context.bot.send_message(
         chat_id=CHANNEL_ID,
-        text=message,
+        text=deal_message,
         reply_markup=reply_markup
     )
+
+    # =====================
+    # SUCCESS
+    # =====================
 
     await update.message.reply_text(
         "✅ Deal Posted Successfully 🚀"
@@ -162,7 +196,7 @@ def main():
         )
     )
 
-    print("Bot Running 🚀")
+    print("🚀 Bot Running Successfully")
 
     app.run_polling()
 
