@@ -34,7 +34,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = """
 🔥 Welcome To Deals Of Freedom 🔥
 
-Send Amazon Affiliate Product Link 🚀
+Send Message Like This 👇
+
+SHORT LINK
+LONG AMAZON LINK
 """
 
     await update.message.reply_text(
@@ -43,33 +46,13 @@ Send Amazon Affiliate Product Link 🚀
     )
 
 # =========================
-# ABOUT
-# =========================
-
-async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    text = """
-🔥 Deals Of Freedom Bot
-
-✅ Amazon Affiliate Support
-✅ Auto Deal Posting
-✅ Buy Now Buttons
-✅ Professional Deal Format
-
-🚀 Bot Running Successfully
-"""
-
-    await update.message.reply_text(text)
-
-# =========================
-# EXTRACT PRODUCT NAME
+# PRODUCT NAME
 # =========================
 
 def get_product_name(link):
 
     try:
 
-        # Amazon link name extract
         if "/dp/" in link:
 
             name = link.split("/dp/")[0]
@@ -87,23 +70,47 @@ def get_product_name(link):
         return "Hot Deal Product"
 
 # =========================
-# HANDLE LINK
+# HANDLE MESSAGE
 # =========================
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    original_link = update.message.text.strip()
+    text = update.message.text.strip()
 
-    lower_link = original_link.lower()
+    lines = text.split("\n")
 
     # =====================
-    # VALIDATION
+    # REQUIRE 2 LINKS
     # =====================
 
-    if "amazon." not in lower_link and "amzn.to" not in lower_link:
+    if len(lines) < 2:
 
         await update.message.reply_text(
-            "❌ Send Valid Amazon Affiliate Link"
+            "❌ Send:\n\nSHORT LINK\nLONG AMAZON LINK"
+        )
+
+        return
+
+    short_link = lines[0].strip()
+
+    long_link = lines[1].strip()
+
+    # =====================
+    # VALIDATE
+    # =====================
+
+    if "amzn.to" not in short_link.lower():
+
+        await update.message.reply_text(
+            "❌ First Link Must Be Short Amazon Link"
+        )
+
+        return
+
+    if "amazon." not in long_link.lower():
+
+        await update.message.reply_text(
+            "❌ Second Link Must Be Full Amazon Product Link"
         )
 
         return
@@ -112,7 +119,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # PRODUCT NAME
     # =====================
 
-    product_name = get_product_name(original_link)
+    product_name = get_product_name(long_link)
 
     # =====================
     # BUTTONS
@@ -123,7 +130,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [
             InlineKeyboardButton(
                 "🛒 Buy Now",
-                url=original_link
+                url=long_link
             )
         ],
 
@@ -147,6 +154,8 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # =====================
 
     message = f"""
+{short_link}
+
 🔥 HOT DEAL ALERT 🔥
 
 🛍 Product:
@@ -160,23 +169,16 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 """
 
     # =====================
-    # SEND TO CHANNEL
+    # SEND
     # =====================
 
     try:
 
-        # First send affiliate link separately
-        await context.bot.send_message(
-            chat_id=CHANNEL_ID,
-            text=original_link,
-            disable_web_page_preview=False
-        )
-
-        # Then send formatted deal
         await context.bot.send_message(
             chat_id=CHANNEL_ID,
             text=message,
-            reply_markup=reply_markup
+            reply_markup=reply_markup,
+            disable_web_page_preview=False
         )
 
         await update.message.reply_text(
@@ -190,6 +192,23 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 # =========================
+# ABOUT
+# =========================
+
+async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    text = """
+🔥 Deals Of Freedom Bot
+
+✅ Short Link Visible
+✅ Product Preview Working
+✅ Buy Button
+✅ Professional Deal Layout
+"""
+
+    await update.message.reply_text(text)
+
+# =========================
 # MAIN
 # =========================
 
@@ -197,13 +216,8 @@ def main():
 
     app = Application.builder().token(BOT_TOKEN).build()
 
-    app.add_handler(
-        CommandHandler("start", start)
-    )
-
-    app.add_handler(
-        CommandHandler("about", about)
-    )
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("about", about))
 
     app.add_handler(
         MessageHandler(
