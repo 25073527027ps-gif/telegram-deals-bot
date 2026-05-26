@@ -45,7 +45,7 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = """
 🔥 Deals Of Freedom Bot
 
-✅ Amazon Affiliate Auto Posting
+✅ Amazon Product Preview
 ✅ Product Photo
 ✅ Product Details
 ✅ Buy Now Button
@@ -56,7 +56,7 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text)
 
 # =========================
-# HANDLE AMAZON LINKS
+# HANDLE AMAZON LINK
 # =========================
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -65,7 +65,7 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     lower_link = original_link.lower()
 
-    # AMAZON VALIDATION
+    # AMAZON LINK CHECK
     if "amazon" in lower_link or "amzn.to" in lower_link:
 
         keyboard = [
@@ -89,24 +89,13 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        message = f"""
-🔥 HOT DEAL ALERT 🔥
-
-⚡ Best Price Online
-💥 Limited Time Offer
-🚀 Hurry Up Before Stock Ends
-
-👇 Buy From Button Below 👇
-
-{original_link}
-"""
-
         try:
 
-            # IMPORTANT:
-            # LINK ONLY MESSAGE
-            # Telegram automatically fetches
-            # product image + details preview
+            # STEP 1
+            # SEND ONLY AMAZON LINK
+            # Telegram automatically fetches:
+            # ✅ Product Photo
+            # ✅ Product Details
 
             await context.bot.send_message(
                 chat_id=CHANNEL_ID,
@@ -114,10 +103,20 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 disable_web_page_preview=False
             )
 
-            # DEAL MESSAGE
+            # STEP 2
+            # SEND BUTTONS ONLY
+
             await context.bot.send_message(
                 chat_id=CHANNEL_ID,
-                text=message,
+                text="""
+🔥 HOT DEAL ALERT 🔥
+
+⚡ Best Price Online
+💥 Limited Time Offer
+🚀 Hurry Up Before Stock Ends
+
+👇 Buy From Button Below 👇
+""",
                 reply_markup=reply_markup
             )
 
