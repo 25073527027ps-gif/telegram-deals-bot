@@ -1,7 +1,5 @@
 import os
-import re
 import requests
-
 from bs4 import BeautifulSoup
 
 from telegram import (
@@ -18,14 +16,11 @@ from telegram.ext import (
     ContextTypes
 )
 
-# =========================
-# CONFIG
-# =========================
-
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 CHANNEL_USERNAME = "@dealsoffreedom"
 CHANNEL_LINK = "https://t.me/dealsoffreedom"
+
 
 # =========================
 # START
@@ -46,28 +41,30 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # GET PRODUCT DETAILS
 # =========================
 
-def extract_product_details(url):
+def get_product_data(url):
 
     headers = {
-        "User-Agent":
-        "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0"
     }
 
+    # FOLLOW REDIRECTS
     response = requests.get(
         url,
         headers=headers,
-        timeout=20
+        timeout=20,
+        allow_redirects=True
     )
+
+    final_url = response.url
 
     soup = BeautifulSoup(
         response.text,
         "html.parser"
     )
 
-    title = "🔥 HOT DEAL ALERT 🔥"
-    image = None
-
     # TITLE
+
+    title = "🔥 HOT DEAL ALERT 🔥"
 
     title_tag = soup.find(
         "meta",
@@ -79,6 +76,8 @@ def extract_product_details(url):
 
     # IMAGE
 
+    image = None
+
     image_tag = soup.find(
         "meta",
         property="og:image"
@@ -87,7 +86,7 @@ def extract_product_details(url):
     if image_tag:
         image = image_tag.get("content")
 
-    return title, image
+    return title, image, final_url
 
 
 # =========================
@@ -103,8 +102,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     link = text.strip()
 
-    # VALIDATE LINK
-
     if "http" not in link.lower():
 
         await update.message.reply_text(
@@ -114,21 +111,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
 
-        # GET PRODUCT DETAILS
-
-        title, image = extract_product_details(link)
-
-        # SHORT TITLE
-
-        short_title = title[:120]
-
-        # CAPTION
+        title, image, final_url = get_product_data(link)
 
         caption = f"""
 🔥 HOT DEAL ALERT 🔥
 
 🛍 Product:
-{short_title}
+{title[:120]}
 
 💥 Best Price Online
 ⚡ Limited Time Offer
@@ -136,8 +125,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 👇 Buy From Button Below 👇
 """
-
-        # BUTTONS
 
         keyboard = [
             [
@@ -205,10 +192,7 @@ def main():
     ).build()
 
     app.add_handler(
-        CommandHandler(
-            "start",
-            start
-        )
+        CommandHandler("start", start)
     )
 
     app.add_handler(
