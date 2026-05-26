@@ -1,11 +1,15 @@
 import os
 import re
 import requests
+
+from bs4 import BeautifulSoup
+
 from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup
 )
+
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -24,7 +28,7 @@ CHANNEL_USERNAME = "@dealsoffreedom"
 CHANNEL_LINK = "https://t.me/dealsoffreedom"
 
 # =========================
-# START COMMAND
+# START
 # =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -32,55 +36,62 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = """
 🔥 Welcome To Deals Of Freedom 🔥
 
-Send Any Shopping Product Link 🚀
+🚀 Send Any Shopping Product Link
 """
 
     await update.message.reply_text(text)
 
 
 # =========================
-# EXTRACT IMAGE
+# GET PRODUCT DETAILS
 # =========================
 
-def get_image_from_html(html):
+def extract_product_details(url):
 
-    patterns = [
-        r'<meta property="og:image" content="(.*?)"',
-        r'<meta name="twitter:image" content="(.*?)"',
-        r'"image":"(.*?)"',
-    ]
+    headers = {
+        "User-Agent":
+        "Mozilla/5.0"
+    }
 
-    for pattern in patterns:
-        match = re.search(pattern, html)
+    response = requests.get(
+        url,
+        headers=headers,
+        timeout=20
+    )
 
-        if match:
-            return match.group(1).replace("\\u002F", "/")
+    soup = BeautifulSoup(
+        response.text,
+        "html.parser"
+    )
 
-    return None
+    title = "🔥 HOT DEAL ALERT 🔥"
+    image = None
+
+    # TITLE
+
+    title_tag = soup.find(
+        "meta",
+        property="og:title"
+    )
+
+    if title_tag:
+        title = title_tag.get("content")
+
+    # IMAGE
+
+    image_tag = soup.find(
+        "meta",
+        property="og:image"
+    )
+
+    if image_tag:
+        image = image_tag.get("content")
+
+    return title, image
 
 
 # =========================
-# EXTRACT TITLE
-# =========================
-
-def get_title_from_html(html):
-
-    patterns = [
-        r'<meta property="og:title" content="(.*?)"',
-        r'<title>(.*?)</title>',
-    ]
-
-    for pattern in patterns:
-        match = re.search(pattern, html)
-
-        if match:
-            return match.group(1)
-
-    return "🔥 HOT DEAL ALERT 🔥"
-
-
-# =========================
-# HANDLE LINKS
+# HANDLE MESSAGE
 # =========================
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -90,11 +101,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not text:
         return
 
-    original_link = text.strip()
-    lower_link = original_link.lower()
+    link = text.strip()
 
-    # ACCEPT ALL LINKS
-    if "http" not in lower_link:
+    # VALIDATE LINK
+
+    if "http" not in link.lower():
 
         await update.message.reply_text(
             "❌ Send Valid Shopping Product Link"
@@ -103,40 +114,36 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
 
-        headers = {
-            "User-Agent": (
-                "Mozilla/5.0"
-            )
-        }
+        # GET PRODUCT DETAILS
 
-        response = requests.get(
-            original_link,
-            headers=headers,
-            timeout=15
-        )
+        title, image = extract_product_details(link)
 
-        html = response.text
+        # SHORT TITLE
 
-        title = get_title_from_html(html)
-        image_url = get_image_from_html(html)
+        short_title = title[:120]
+
+        # CAPTION
 
         caption = f"""
 🔥 HOT DEAL ALERT 🔥
 
-✨ {title[:120]}
+🛍 Product:
+{short_title}
 
 💥 Best Price Online
 ⚡ Limited Time Offer
-🛒 Grab Fast Before Price Increase
+🚀 Hurry Up Before Stock Ends
 
 👇 Buy From Button Below 👇
 """
+
+        # BUTTONS
 
         keyboard = [
             [
                 InlineKeyboardButton(
                     "🛒 Buy Now",
-                    url=original_link
+                    url=link
                 )
             ],
             [
@@ -151,15 +158,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
         ]
 
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        reply_markup = InlineKeyboardMarkup(
+            keyboard
+        )
 
-        # SEND TO CHANNEL
+        # SEND PHOTO POST
 
-        if image_url:
+        if image:
 
             await context.bot.send_photo(
                 chat_id=CHANNEL_USERNAME,
-                photo=image_url,
+                photo=image,
                 caption=caption,
                 reply_markup=reply_markup
             )
@@ -191,10 +200,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
 
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = Application.builder().token(
+        BOT_TOKEN
+    ).build()
 
     app.add_handler(
-        CommandHandler("start", start)
+        CommandHandler(
+            "start",
+            start
+        )
     )
 
     app.add_handler(
