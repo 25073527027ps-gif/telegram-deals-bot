@@ -1,12 +1,11 @@
 import os
-
+import re
+import requests
 from telegram import (
     Update,
     InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    ReplyKeyboardRemove
+    InlineKeyboardMarkup
 )
-
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -21,8 +20,7 @@ from telegram.ext import (
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-CHANNEL_ID = "@dealsoffreedom"
-
+CHANNEL_USERNAME = "@dealsoffreedom"
 CHANNEL_LINK = "https://t.me/dealsoffreedom"
 
 # =========================
@@ -31,59 +29,108 @@ CHANNEL_LINK = "https://t.me/dealsoffreedom"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    await update.message.reply_text(
-        "🔥 Welcome To Deals Of Freedom 🔥\n\nSend Any Shopping Affiliate Link 🚀",
-        reply_markup=ReplyKeyboardRemove()
-    )
-
-# =========================
-# ABOUT COMMAND
-# =========================
-
-async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
     text = """
-🔥 Deals Of Freedom Bot
+🔥 Welcome To Deals Of Freedom 🔥
 
-✅ Amazon Affiliate
-✅ Flipkart Affiliate
-✅ Myntra
-✅ Ajio
-✅ Nykaa
-✅ Snapdeal
-
-Auto Deal Posting Bot 🚀
+Send Any Shopping Product Link 🚀
 """
 
     await update.message.reply_text(text)
+
+
+# =========================
+# EXTRACT IMAGE
+# =========================
+
+def get_image_from_html(html):
+
+    patterns = [
+        r'<meta property="og:image" content="(.*?)"',
+        r'<meta name="twitter:image" content="(.*?)"',
+        r'"image":"(.*?)"',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, html)
+
+        if match:
+            return match.group(1).replace("\\u002F", "/")
+
+    return None
+
+
+# =========================
+# EXTRACT TITLE
+# =========================
+
+def get_title_from_html(html):
+
+    patterns = [
+        r'<meta property="og:title" content="(.*?)"',
+        r'<title>(.*?)</title>',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, html)
+
+        if match:
+            return match.group(1)
+
+    return "🔥 HOT DEAL ALERT 🔥"
+
 
 # =========================
 # HANDLE LINKS
 # =========================
 
-async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    original_link = update.message.text.strip()
+    text = update.message.text
 
+    if not text:
+        return
+
+    original_link = text.strip()
     lower_link = original_link.lower()
 
-    shopping_sites = [
-        "amazon",
-        "amzn.to",
+    # ACCEPT ALL LINKS
+    if "http" not in lower_link:
 
-        "flipkart",
-        "fkrt.in",
-        "fkrt.cc",
-        "linkredirect.in",
+        await update.message.reply_text(
+            "❌ Send Valid Shopping Product Link"
+        )
+        return
 
-        "myntra",
-        "ajio",
-        "nykaa",
-        "snapdeal"
-    ]
+    try:
 
-    # VALIDATE LINK
-    if any(site in lower_link for site in shopping_sites):
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0"
+            )
+        }
+
+        response = requests.get(
+            original_link,
+            headers=headers,
+            timeout=15
+        )
+
+        html = response.text
+
+        title = get_title_from_html(html)
+        image_url = get_image_from_html(html)
+
+        caption = f"""
+🔥 HOT DEAL ALERT 🔥
+
+✨ {title[:120]}
+
+💥 Best Price Online
+⚡ Limited Time Offer
+🛒 Grab Fast Before Price Increase
+
+👇 Buy From Button Below 👇
+"""
 
         keyboard = [
             [
@@ -106,41 +153,37 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        message = f"""
-🔥 HOT DEAL ALERT 🔥
+        # SEND TO CHANNEL
 
-⚡ Best Price Online
-💥 Limited Time Offer
+        if image_url:
 
-👇 Buy From Button Below 👇
+            await context.bot.send_photo(
+                chat_id=CHANNEL_USERNAME,
+                photo=image_url,
+                caption=caption,
+                reply_markup=reply_markup
+            )
 
-{original_link}
-"""
-
-        try:
+        else:
 
             await context.bot.send_message(
-                chat_id=CHANNEL_ID,
-                text=message,
-                reply_markup=reply_markup,
-                disable_web_page_preview=False
+                chat_id=CHANNEL_USERNAME,
+                text=caption,
+                reply_markup=reply_markup
             )
-
-            await update.message.reply_text(
-                "✅ Deal Posted Successfully 🚀"
-            )
-
-        except Exception as e:
-
-            await update.message.reply_text(
-                f"❌ Error:\n{e}"
-            )
-
-    else:
 
         await update.message.reply_text(
-            "❌ Send Valid Shopping Product Link"
+            "✅ Deal Posted Successfully 🚀"
         )
+
+    except Exception as e:
+
+        print(e)
+
+        await update.message.reply_text(
+            "❌ Error While Posting Deal"
+        )
+
 
 # =========================
 # MAIN
@@ -150,21 +193,21 @@ def main():
 
     app = Application.builder().token(BOT_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("about", about))
+    app.add_handler(
+        CommandHandler("start", start)
+    )
 
     app.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
-            handle_link
+            handle_message
         )
     )
 
-    print("Bot Running Successfully 🚀")
+    print("Bot Running...")
 
     app.run_polling()
 
-# =========================
 
 if __name__ == "__main__":
     main()
