@@ -1,14 +1,12 @@
 import os
+import re
 import requests
-
 from bs4 import BeautifulSoup
-
 from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup
 )
-
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -20,117 +18,111 @@ from telegram.ext import (
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 CHANNEL_USERNAME = "@dealsoffreedom"
-CHANNEL_LINK = "https://t.me/dealsoffreedom"
 
 
-# =========================
-# START
-# =========================
-
+# START COMMAND
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = """
+🔥 Welcome To Deals Of Freedom 🔥
 
-    await update.message.reply_text(
-        "🔥 Send Original + Affiliate Link"
-    )
+Send Shopping Product Link 🚀
+
+Amazon → Direct Link
+Flipkart → Use Format:
+
+ORIGINAL: original product link
+AFFILIATE: earnkaro/fkrt link
+"""
+    await update.message.reply_text(text)
 
 
-# =========================
-# GET PRODUCT DATA
-# =========================
-
-def get_product_data(url):
-
+# SCRAPE PRODUCT DETAILS
+def get_product_details(url):
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
 
-    response = requests.get(
-        url,
-        headers=headers,
-        timeout=20
-    )
+    try:
+        r = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(r.text, "html.parser")
 
-    soup = BeautifulSoup(
-        response.text,
-        "html.parser"
-    )
+        title = "Hot Deal Product"
+        image = None
 
-    title = "🔥 HOT DEAL ALERT 🔥"
-    image = None
+        # AMAZON
+        amazon_title = soup.find(id="productTitle")
+        if amazon_title:
+            title = amazon_title.get_text(strip=True)
 
-    # TITLE
+        amazon_img = soup.find(id="landingImage")
+        if amazon_img:
+            image = amazon_img.get("src")
 
-    title_tag = soup.find(
-        "meta",
-        property="og:title"
-    )
+        # FLIPKART
+        if "flipkart" in url:
 
-    if title_tag:
-        title = title_tag.get("content")
+            meta_title = soup.find("meta", property="og:title")
+            if meta_title:
+                title = meta_title.get("content")
 
-    # IMAGE
+            meta_img = soup.find("meta", property="og:image")
+            if meta_img:
+                image = meta_img.get("content")
 
-    image_tag = soup.find(
-        "meta",
-        property="og:image"
-    )
+        return title[:100], image
 
-    if image_tag:
-        image = image_tag.get("content")
-
-    return title, image
+    except:
+        return "Hot Deal Product", None
 
 
-# =========================
-# HANDLE MESSAGE
-# =========================
-
+# MAIN MESSAGE HANDLER
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    text = update.message.text
+    text = update.message.text.strip()
 
-    if not text:
+    original_link = None
+    affiliate_link = None
+
+    # AMAZON DIRECT
+    if "amazon." in text or "amzn." in text:
+        original_link = text
+        affiliate_link = text
+
+    # FLIPKART FORMAT
+    elif "ORIGINAL:" in text and "AFFILIATE:" in text:
+
+        try:
+            original_link = text.split(
+                "ORIGINAL:"
+            )[1].split(
+                "AFFILIATE:"
+            )[0].strip()
+
+            affiliate_link = text.split(
+                "AFFILIATE:"
+            )[1].strip()
+
+        except:
+            pass
+
+    else:
+        await update.message.reply_text(
+            "❌ Wrong Format\n\n"
+            "Amazon → Direct Link\n\n"
+            "Flipkart Format:\n\n"
+            "ORIGINAL: https://flipkart....\n"
+            "AFFILIATE: https://fkrt...."
+        )
         return
 
-    try:
+    # PRODUCT DETAILS
+    title, image = get_product_details(original_link)
 
-        lines = text.splitlines()
-
-        original_link = ""
-        affiliate_link = ""
-
-        for line in lines:
-
-            if "ORIGINAL:" in line:
-                original_link = line.replace(
-                    "ORIGINAL:",
-                    ""
-                ).strip()
-
-            if "AFFILIATE:" in line:
-                affiliate_link = line.replace(
-                    "AFFILIATE:",
-                    ""
-                ).strip()
-
-        if not original_link or not affiliate_link:
-
-            await update.message.reply_text(
-                "❌ Format Wrong"
-            )
-            return
-
-        # GET PRODUCT DETAILS
-
-        title, image = get_product_data(
-            original_link
-        )
-
-        caption = f"""
+    caption = f"""
 🔥 HOT DEAL ALERT 🔥
 
 🛍 Product:
-{title[:120]}
+{title}
 
 💥 Best Price Online
 ⚡ Limited Time Offer
@@ -139,35 +131,32 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 👇 Buy From Button Below 👇
 """
 
-        # BUTTONS
-
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    "🛒 Buy Now",
-                    url=affiliate_link
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "📢 Join Channel",
-                    url=CHANNEL_LINK
-                ),
-                InlineKeyboardButton(
-                    "🔥 More Deals",
-                    url=CHANNEL_LINK
-                )
-            ]
+    # BUTTONS
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "🛒 Buy Now",
+                url=affiliate_link
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "📢 Join Channel",
+                url="https://t.me/dealsoffreedom"
+            ),
+            InlineKeyboardButton(
+                "🔥 More Deals",
+                url="https://t.me/dealsoffreedom"
+            )
         ]
+    ]
 
-        reply_markup = InlineKeyboardMarkup(
-            keyboard
-        )
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # SEND POST
+    # SEND TO CHANNEL
+    try:
 
         if image:
-
             await context.bot.send_photo(
                 chat_id=CHANNEL_USERNAME,
                 photo=image,
@@ -176,7 +165,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         else:
-
             await context.bot.send_message(
                 chat_id=CHANNEL_USERNAME,
                 text=caption,
@@ -188,30 +176,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     except Exception as e:
-
-        print(e)
-
         await update.message.reply_text(
-            "❌ Error"
+            f"❌ Error:\n{e}"
         )
 
 
-# =========================
 # MAIN
-# =========================
-
 def main():
 
-    app = Application.builder().token(
-        BOT_TOKEN
-    ).build()
+    app = Application.builder().token(BOT_TOKEN).build()
 
-    app.add_handler(
-        CommandHandler(
-            "start",
-            start
-        )
-    )
+    app.add_handler(CommandHandler("start", start))
 
     app.add_handler(
         MessageHandler(
@@ -221,7 +196,6 @@ def main():
     )
 
     print("Bot Running...")
-
     app.run_polling()
 
 
