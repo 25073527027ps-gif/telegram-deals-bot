@@ -15,10 +15,6 @@ from telegram.ext import (
     ContextTypes
 )
 
-# =========================
-# CONFIG
-# =========================
-
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 CHANNEL_ID = "@dealsoffreedom"
@@ -31,17 +27,8 @@ CHANNEL_LINK = "https://t.me/dealsoffreedom"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    text = """
-🔥 Welcome To Deals Of Freedom 🔥
-
-Send Message Like This 👇
-
-SHORT LINK
-LONG AMAZON LINK
-"""
-
     await update.message.reply_text(
-        text,
+        "Send:\n\n1st Line = Short Affiliate Link\n2nd Line = Long Amazon Link",
         reply_markup=ReplyKeyboardRemove()
     )
 
@@ -70,7 +57,7 @@ def get_product_name(link):
         return "Hot Deal Product"
 
 # =========================
-# HANDLE MESSAGE
+# HANDLE LINK
 # =========================
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -79,14 +66,10 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     lines = text.split("\n")
 
-    # =====================
-    # REQUIRE 2 LINKS
-    # =====================
-
     if len(lines) < 2:
 
         await update.message.reply_text(
-            "❌ Send:\n\nSHORT LINK\nLONG AMAZON LINK"
+            "❌ Send 2 Links"
         )
 
         return
@@ -95,42 +78,14 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     long_link = lines[1].strip()
 
-    # =====================
-    # VALIDATE
-    # =====================
-
-    if "amzn.to" not in short_link.lower():
-
-        await update.message.reply_text(
-            "❌ First Link Must Be Short Amazon Link"
-        )
-
-        return
-
-    if "amazon." not in long_link.lower():
-
-        await update.message.reply_text(
-            "❌ Second Link Must Be Full Amazon Product Link"
-        )
-
-        return
-
-    # =====================
-    # PRODUCT NAME
-    # =====================
-
     product_name = get_product_name(long_link)
-
-    # =====================
-    # BUTTONS
-    # =====================
 
     keyboard = [
 
         [
             InlineKeyboardButton(
                 "🛒 Buy Now",
-                url=long_link
+                url=short_link
             )
         ],
 
@@ -150,12 +105,22 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # =====================
-    # MESSAGE
+    # STEP 1
+    # SEND LONG LINK FOR PREVIEW
+    # =====================
+
+    await context.bot.send_message(
+        chat_id=CHANNEL_ID,
+        text=long_link,
+        disable_web_page_preview=False
+    )
+
+    # =====================
+    # STEP 2
+    # SEND DEAL MESSAGE
     # =====================
 
     message = f"""
-{short_link}
-
 🔥 HOT DEAL ALERT 🔥
 
 🛍 Product:
@@ -166,47 +131,19 @@ async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
 🚀 Hurry Up Before Stock Ends
 
 👇 Buy From Button Below 👇
+
+🔗 {short_link}
 """
 
-    # =====================
-    # SEND
-    # =====================
+    await context.bot.send_message(
+        chat_id=CHANNEL_ID,
+        text=message,
+        reply_markup=reply_markup
+    )
 
-    try:
-
-        await context.bot.send_message(
-            chat_id=CHANNEL_ID,
-            text=message,
-            reply_markup=reply_markup,
-            disable_web_page_preview=False
-        )
-
-        await update.message.reply_text(
-            "✅ Deal Posted Successfully 🚀"
-        )
-
-    except Exception as e:
-
-        await update.message.reply_text(
-            f"❌ Error:\n{e}"
-        )
-
-# =========================
-# ABOUT
-# =========================
-
-async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    text = """
-🔥 Deals Of Freedom Bot
-
-✅ Short Link Visible
-✅ Product Preview Working
-✅ Buy Button
-✅ Professional Deal Layout
-"""
-
-    await update.message.reply_text(text)
+    await update.message.reply_text(
+        "✅ Deal Posted Successfully 🚀"
+    )
 
 # =========================
 # MAIN
@@ -217,7 +154,6 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("about", about))
 
     app.add_handler(
         MessageHandler(
@@ -226,7 +162,7 @@ def main():
         )
     )
 
-    print("🚀 Bot Running Successfully")
+    print("Bot Running 🚀")
 
     app.run_polling()
 
