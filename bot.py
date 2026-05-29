@@ -1,11 +1,18 @@
 import re
+import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
+from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
+
+# लॉगिंग सेट कर रहे हैं ताकि रेलवे लॉग्स में एरर साफ़ दिखे
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
 # 1. अपनी डिटेल्स यहाँ भरें
-BOT_TOKEN = "8601951285:AAE09-x_4Peuh3WSJN68U21iGFKsCuVnLLE"      # अपना बोट टोकन डालें
-TARGET_CHANNEL = "@dealsoffreedom"         # आपके चैनल का यूजरनेम (@ के साथ)
-CHANNEL_LINK = "https://t.me/dealsoffreedom"  # चैनल का लिंक
+BOT_TOKEN = "8601951285:AAE09-x_4Peuh3WSJN68U21iGFKsCuVnLLE"          # अपना बोट टोकन डालें
+TARGET_CHANNEL = "@dealsoffreedom"             # आपके चैनल का यूजरनेम (@ के साथ)
+CHANNEL_LINK = "https://t.me/dealsoffreedom"      # चैनल का इनवाइट लिंक
 MORE_DEALS_LINK = "https://t.me/dealsoffreedom"
 
 # एफिलिएट ट्रैकिंग आईडी
@@ -25,7 +32,7 @@ def modify_link(original_url):
 
     return original_url.strip()
 
-def handle_message(update: Update, context: CallbackContext):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if not text:
         return
@@ -43,10 +50,10 @@ def handle_message(update: Update, context: CallbackContext):
             new_url = modify_link(url)
             modified_text = modified_text.replace(url, new_url)
         
-        # 🌟 HTML फॉर्मेट में आकर्षक हेडिंग जोड़ना (यह कभी एरर नहीं देगा)
+        # 🌟 HTML फॉर्मेट में आकर्षक हेडिंग
         final_message_text = f"🔥 <b>NEW BLAST DEAL</b> 🔥\n\n{modified_text}"
         
-        # 🔘 नीचे सुंदर इनलाइन बटन्स जोड़ना
+        # 🔘 नीचे सुंदर इनलाइन बटन्स
         keyboard = [
             [InlineKeyboardButton("🛒 Buy Now (खरीदें)", url=buy_now_url)],
             [
@@ -58,41 +65,23 @@ def handle_message(update: Update, context: CallbackContext):
         
         try:
             # चैनल पर पोस्ट भेजना
-            context.bot.send_message(
+            await context.bot.send_message(
                 chat_id=TARGET_CHANNEL, 
                 text=final_message_text, 
                 reply_markup=reply_markup,
-                parse_mode="HTML"  # सुरक्षित और बेहतर फॉर्मेटिंग के लिए HTML का इस्तेमाल
+                parse_mode="HTML"  # सुरक्षित फॉर्मेटिंग
             )
-            # आपको बोट में कन्फर्मेशन मिलना
-            update.message.reply_text("✅ डील बटन्स और न्यू अपडेट के साथ चैनल पर सफलतापूर्वक पोस्ट हो गई है!")
+            await update.message.reply_text("✅ डील बटन्स के साथ चैनल पर पोस्ट हो गई है!")
         except Exception as e:
-            # अगर कोई गड़बड़ हो तो आपको चैट में एरर दिख जाएगा
-            update.message.reply_text(f"❌ पोस्ट भेजने में एरर आया: {e}")
-
-def main():
-    # पुराने और नए दोनों टेलीग्राम लाइब्रेरी वर्शन्स के लिए कम्पैटिबल सेटअप
-    try:
-        # अगर आपका python-telegram-bot वर्शन पुराना है
-        updater = Updater(BOT_TOKEN, use_context=True)
-        dp = updater.dispatcher
-        dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
-        print("बॉट चालू हो गया है (वर्मन 13)...")
-        updater.start_polling()
-        updater.idle()
-    except Exception:
-        # अगर आपका वर्शन नया (v20+) है तो यह तरीका काम करेगा
-        from telegram.ext import ApplicationBuilder
-        app = ApplicationBuilder().token(BOT_TOKEN).build()
-        from telegram.ext import MessageHandler as NewMessageHandler
-        from telegram.ext import filters as new_filters
-        
-        async def async_handle(update: Update, context):
-            handle_message(update, context)
-            
-        app.add_handler(NewMessageHandler(new_filters.TEXT & ~new_filters.COMMAND, async_handle))
-        print("बॉट चालू हो गया है (वर्शन 20+)...")
-        app.run_polling()
+            # अगर टेलीग्राम कोई एरर देता है तो आपको चैट में पता चल जाएगा
+            await update.message.reply_text(f"❌ चैनल पर पोस्ट नहीं हुई। एरर: {e}")
 
 if __name__ == '__main__':
-    main()
+    # पूरी तरह से न्यू वर्शन (v20+) एसिंक्रोनस सेटअप
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    
+    # टेक्स्ट मैसेज हैंडलर
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
+    print("बॉट सफलताबाूर्वक चालू हो गया है...")
+    app.run_polling()
