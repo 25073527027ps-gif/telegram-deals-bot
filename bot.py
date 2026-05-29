@@ -1,136 +1,71 @@
-import os
+import re
+import requests
+from telegram import Update
+from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
 
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    ReplyKeyboardRemove
-)
+# आपके एफिलिएट टैग्स / ट्रैकिंग आईडी
+AMAZON_TAG = "your_amazon_tag-21"
+FLIPKART_AFF_ID = "your_flipkart_id"
 
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    filters,
-    ContextTypes
-)
+def modify_link(original_url):
+    """
+    विभिन्न शॉपिंग वेबसाइट्स के लिंक्स को पहचान कर उन्हें एफिलिएट लिंक में बदलना
+    """
+    # 1. AMAZON LINK CHECK
+    if "amazon.in" in original_url or "amzn.to" in original_url:
+        # अगर लिंक में पहले से कोई टैग है तो उसे हटाकर अपना टैग जोड़ना
+        clean_url = re.sub(r'tag=[^&]+', '', original_url)
+        connector = "&" if "?" in clean_url else "?"
+        return f"{clean_url.strip()}{connector}tag={AMAZON_TAG}"
 
-# =========================
-# CONFIG
-# =========================
+    # 2. FLIPKART LINK CHECK
+    elif "flipkart.com" in original_url:
+        connector = "&" if "?" in original_url else "?"
+        return f"{original_url.strip()}{connector}affid={FLIPKART_AFF_ID}"
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+    # 3. MYNTRA LINK CHECK
+    elif "myntra.com" in original_url:
+        # आप अपनी मायन्त्रा एफिलिएट नेटवर्क (जैसे EarnKaro/Cuelinks) का सब-आईडी यहाँ जोड़ सकते हैं
+        return original_url.strip()
 
-CHANNEL_ID = "@dealsoffreedom"
+    # 4. AJIO LINK CHECK
+    elif "ajio.com" in original_url:
+        return original_url.strip()
 
-CHANNEL_LINK = "https://t.me/dealsoffreedom"
+    # अगर कोई अन्य लिंक है तो उसे बिना बदलाव के भेजें
+    return original_url
 
-# =========================
-# START
-# =========================
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if not text:
+        return
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # मैसेज में से यूआरएल (URLs) ढूंढना
+    urls = re.findall(r'(https?://[^\s]+)', text)
+    
+    if urls:
+        modified_text = text
+        for url in urls:
+            new_url = modify_link(url)
+            modified_text = modified_text.replace(url, new_url)
+        
+        # आपके डील्स चैनल की आईडी (यहाँ अपनी चैनल आईडी डालें जैसे '@dealsoffreedom')
+        TARGET_CHANNEL = "@dealsoffreedom" 
+        
+        # चैनल पर ऑटोमेटिक पोस्ट भेजना
+        await context.bot.send_message(chat_id=TARGET_CHANNEL, text=modified_text)
+        
+        # आपको बोट चैट में कन्फर्मेशन मिलना
+        await update.message.reply_text("✅ डील सफलताबाूर्वक चैनल पर अपलोड हो गई है!")
 
-    await update.message.reply_text(
-        "🔥 Welcome To Deals Of Freedom 🔥\n\nSend Amazon Affiliate Link 🚀",
-        reply_markup=ReplyKeyboardRemove()
-    )
-
-# =========================
-# HANDLE LINK
-# =========================
-
-async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    original_link = update.message.text.strip()
-
-    lower_link = original_link.lower()
-
-    if "amazon" in lower_link:
-
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    "🛒 Buy Now",
-                    url=original_link
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "📢 Join Channel",
-                    url=CHANNEL_LINK
-                ),
-                InlineKeyboardButton(
-                    "🔥 More Deals",
-                    url=CHANNEL_LINK
-                )
-            ]
-        ]
-
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        try:
-
-            # PRODUCT PREVIEW
-            await context.bot.send_message(
-                chat_id=CHANNEL_ID,
-                text=original_link,
-                disable_web_page_preview=False
-            )
-
-            # BUTTON MESSAGE
-            await context.bot.send_message(
-                chat_id=CHANNEL_ID,
-                text="""
-🔥 HOT DEAL ALERT 🔥
-
-⚡ Best Price Online
-💥 Limited Time Offer
-🚀 Hurry Up Before Stock Ends
-
-👇 Buy From Button Below 👇
-""",
-                reply_markup=reply_markup
-            )
-
-            await update.message.reply_text(
-                "✅ Deal Posted Successfully 🚀"
-            )
-
-        except Exception as e:
-
-            await update.message.reply_text(
-                f"❌ Error:\n{e}"
-            )
-
-    else:
-
-        await update.message.reply_text(
-            "❌ Send Valid Amazon Link"
-        )
-
-# =========================
-# MAIN
-# =========================
-
-def main():
-
-    app = Application.builder().token(BOT_TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-
-    app.add_handler(
-        MessageHandler(
-            filters.TEXT & ~filters.COMMAND,
-            handle_link
-        )
-    )
-
-    print("Bot Running Successfully 🚀")
-
+if __name__ == '__main__':
+    # अपना टेलीग्राम बोट टोकन यहाँ डालें
+    BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+    
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    
+    # हर टेक्स्ट मैसेज को चेक करने के लिए हैंडलर
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
+    print("बॉट चालू हो गया है और लिंक्स की निगरानी कर रहा है...")
     app.run_polling()
-
-# =========================
-
-if __name__ == "__main__":
-    main()
