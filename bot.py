@@ -1,18 +1,19 @@
 import re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
+from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
 
-# आपके एफिलिएट टैग्स / ट्रैकिंग आईडी
+# 1. अपनी डिटेल्स यहाँ भरें
+BOT_TOKEN = "8601951285:AAE09-x_4Peuh3WSJN68U21iGFKsCuVnLLE"      # अपना बोट टोकन डालें
+TARGET_CHANNEL = "@dealsoffreedom"         # आपके चैनल का यूजरनेम (@ के साथ)
+CHANNEL_LINK = "https://t.me/dealsoffreedom"  # चैनल का लिंक
+MORE_DEALS_LINK = "https://t.me/dealsoffreedom"
+
+# एफिलिएट ट्रैकिंग आईडी
 AMAZON_TAG = "your_amazon_tag-21"
 FLIPKART_AFF_ID = "your_flipkart_id"
 
-# आपके चैनल और अन्य लिंक्स (इन्हें बदल लें)
-CHANNEL_USERNAME = "@dealsoffreedom"  # आपके चैनल का यूजरनेम
-CHANNEL_LINK = "https://t.me/dealsoffreedom"  # चैनल का इनवाइट लिंक
-MORE_DEALS_LINK = "https://t.me/dealsoffreedom"  # या आपकी कोई वेबसाइट/दूसरा लिंक
-
 def modify_link(original_url):
-    """विभिन्न शॉपिंग वेबसाइट्स के लिंक्स को एफिलिएट लिंक में बदलना"""
+    """लिंक्स को एफिलिएट लिंक में बदलना"""
     if "amazon.in" in original_url or "amzn.to" in original_url:
         clean_url = re.sub(r'tag=[^&]+', '', original_url)
         connector = "&" if "?" in clean_url else "?"
@@ -24,27 +25,28 @@ def modify_link(original_url):
 
     return original_url.strip()
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def handle_message(update: Update, context: CallbackContext):
     text = update.message.text
     if not text:
         return
 
-    # मैसेज में से पहला URL ढूंढना (Buy Now बटन के लिए)
+    # मैसेज में से लिंक्स ढूंढना
     urls = re.findall(r'(https?://[^\s]+)', text)
     
     if urls:
-        buy_now_url = modify_link(urls[0])  # पहली लिंक को एफिलिएट लिंक में बदलें
+        # पहले लिंक को 'Buy Now' बटन के लिए सेट करें
+        buy_now_url = modify_link(urls[0])
         
-        # बाकी लिंक्स को भी मैसेज टेक्स्ट में रिप्लेस करना
+        # पूरे टेक्स्ट में सभी लिंक्स को रिप्लेस करना
         modified_text = text
         for url in urls:
             new_url = modify_link(url)
             modified_text = modified_text.replace(url, new_url)
         
-        # 🌟 नया फीचर: मैसेज के ऊपर एक आकर्षक 'New Deal' हेडिंग जोड़ना
-        final_message_text = f"🔥 **NEW BLAST DEAL** 🔥\n\n{modified_text}"
+        # 🌟 HTML फॉर्मेट में आकर्षक हेडिंग जोड़ना (यह कभी एरर नहीं देगा)
+        final_message_text = f"🔥 <b>NEW BLAST DEAL</b> 🔥\n\n{modified_text}"
         
-        # 🔘 इनलाइन बटन्स (Inline Keyboard) तैयार करना
+        # 🔘 नीचे सुंदर इनलाइन बटन्स जोड़ना
         keyboard = [
             [InlineKeyboardButton("🛒 Buy Now (खरीदें)", url=buy_now_url)],
             [
@@ -54,22 +56,43 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # टेलीग्राम चैनल पर बटन के साथ पोस्ट भेजना
-        await context.bot.send_message(
-            chat_id=CHANNEL_USERNAME, 
-            text=final_message_text, 
-            reply_markup=reply_markup,
-            parse_mode="Markdown"  # ताकि बोल्ड टेक्स्ट (** बोल्ड **) सही से दिखे
-        )
+        try:
+            # चैनल पर पोस्ट भेजना
+            context.bot.send_message(
+                chat_id=TARGET_CHANNEL, 
+                text=final_message_text, 
+                reply_markup=reply_markup,
+                parse_mode="HTML"  # सुरक्षित और बेहतर फॉर्मेटिंग के लिए HTML का इस्तेमाल
+            )
+            # आपको बोट में कन्फर्मेशन मिलना
+            update.message.reply_text("✅ डील बटन्स और न्यू अपडेट के साथ चैनल पर सफलतापूर्वक पोस्ट हो गई है!")
+        except Exception as e:
+            # अगर कोई गड़बड़ हो तो आपको चैट में एरर दिख जाएगा
+            update.message.reply_text(f"❌ पोस्ट भेजने में एरर आया: {e}")
+
+def main():
+    # पुराने और नए दोनों टेलीग्राम लाइब्रेरी वर्शन्स के लिए कम्पैटिबल सेटअप
+    try:
+        # अगर आपका python-telegram-bot वर्शन पुराना है
+        updater = Updater(BOT_TOKEN, use_context=True)
+        dp = updater.dispatcher
+        dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+        print("बॉट चालू हो गया है (वर्मन 13)...")
+        updater.start_polling()
+        updater.idle()
+    except Exception:
+        # अगर आपका वर्शन नया (v20+) है तो यह तरीका काम करेगा
+        from telegram.ext import ApplicationBuilder
+        app = ApplicationBuilder().token(BOT_TOKEN).build()
+        from telegram.ext import MessageHandler as NewMessageHandler
+        from telegram.ext import filters as new_filters
         
-        # बोट चैट में आपको कन्फर्मेशन मिलना
-        await update.message.reply_text("✅ डील बटन्स और न्यू अपडेट हेडिंग के साथ चैनल पर पोस्ट हो गई है!")
+        async def async_handle(update: Update, context):
+            handle_message(update, context)
+            
+        app.add_handler(NewMessageHandler(new_filters.TEXT & ~new_filters.COMMAND, async_handle))
+        print("बॉट चालू हो गया है (वर्शन 20+)...")
+        app.run_polling()
 
 if __name__ == '__main__':
-    BOT_TOKEN = "8601951285:AAE09-x_4Peuh3WSJN68U21iGFKsCuVnLLE"
-    
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
-    print("बॉट चालू है और बटन्स के साथ डील्स पोस्ट करने के लिए तैयार है...")
-    app.run_polling()
+    main()
