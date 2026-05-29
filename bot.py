@@ -1,71 +1,75 @@
 import re
-import requests
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filters
 
 # आपके एफिलिएट टैग्स / ट्रैकिंग आईडी
 AMAZON_TAG = "your_amazon_tag-21"
 FLIPKART_AFF_ID = "your_flipkart_id"
 
+# आपके चैनल और अन्य लिंक्स (इन्हें बदल लें)
+CHANNEL_USERNAME = "@dealsoffreedom"  # आपके चैनल का यूजरनेम
+CHANNEL_LINK = "https://t.me/dealsoffreedom"  # चैनल का इनवाइट लिंक
+MORE_DEALS_LINK = "https://t.me/dealsoffreedom"  # या आपकी कोई वेबसाइट/दूसरा लिंक
+
 def modify_link(original_url):
-    """
-    विभिन्न शॉपिंग वेबसाइट्स के लिंक्स को पहचान कर उन्हें एफिलिएट लिंक में बदलना
-    """
-    # 1. AMAZON LINK CHECK
+    """विभिन्न शॉपिंग वेबसाइट्स के लिंक्स को एफिलिएट लिंक में बदलना"""
     if "amazon.in" in original_url or "amzn.to" in original_url:
-        # अगर लिंक में पहले से कोई टैग है तो उसे हटाकर अपना टैग जोड़ना
         clean_url = re.sub(r'tag=[^&]+', '', original_url)
         connector = "&" if "?" in clean_url else "?"
         return f"{clean_url.strip()}{connector}tag={AMAZON_TAG}"
 
-    # 2. FLIPKART LINK CHECK
     elif "flipkart.com" in original_url:
         connector = "&" if "?" in original_url else "?"
         return f"{original_url.strip()}{connector}affid={FLIPKART_AFF_ID}"
 
-    # 3. MYNTRA LINK CHECK
-    elif "myntra.com" in original_url:
-        # आप अपनी मायन्त्रा एफिलिएट नेटवर्क (जैसे EarnKaro/Cuelinks) का सब-आईडी यहाँ जोड़ सकते हैं
-        return original_url.strip()
-
-    # 4. AJIO LINK CHECK
-    elif "ajio.com" in original_url:
-        return original_url.strip()
-
-    # अगर कोई अन्य लिंक है तो उसे बिना बदलाव के भेजें
-    return original_url
+    return original_url.strip()
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if not text:
         return
 
-    # मैसेज में से यूआरएल (URLs) ढूंढना
+    # मैसेज में से पहला URL ढूंढना (Buy Now बटन के लिए)
     urls = re.findall(r'(https?://[^\s]+)', text)
     
     if urls:
+        buy_now_url = modify_link(urls[0])  # पहली लिंक को एफिलिएट लिंक में बदलें
+        
+        # बाकी लिंक्स को भी मैसेज टेक्स्ट में रिप्लेस करना
         modified_text = text
         for url in urls:
             new_url = modify_link(url)
             modified_text = modified_text.replace(url, new_url)
         
-        # आपके डील्स चैनल की आईडी (यहाँ अपनी चैनल आईडी डालें जैसे '@dealsoffreedom')
-        TARGET_CHANNEL = "@dealsoffreedom" 
+        # 🌟 नया फीचर: मैसेज के ऊपर एक आकर्षक 'New Deal' हेडिंग जोड़ना
+        final_message_text = f"🔥 **NEW BLAST DEAL** 🔥\n\n{modified_text}"
         
-        # चैनल पर ऑटोमेटिक पोस्ट भेजना
-        await context.bot.send_message(chat_id=TARGET_CHANNEL, text=modified_text)
+        # 🔘 इनलाइन बटन्स (Inline Keyboard) तैयार करना
+        keyboard = [
+            [InlineKeyboardButton("🛒 Buy Now (खरीदें)", url=buy_now_url)],
+            [
+                InlineKeyboardButton("📢 Join Channel", url=CHANNEL_LINK),
+                InlineKeyboardButton("🛍️ More Deals", url=MORE_DEALS_LINK)
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         
-        # आपको बोट चैट में कन्फर्मेशन मिलना
-        await update.message.reply_text("✅ डील सफलताबाूर्वक चैनल पर अपलोड हो गई है!")
+        # टेलीग्राम चैनल पर बटन के साथ पोस्ट भेजना
+        await context.bot.send_message(
+            chat_id=CHANNEL_USERNAME, 
+            text=final_message_text, 
+            reply_markup=reply_markup,
+            parse_mode="Markdown"  # ताकि बोल्ड टेक्स्ट (** बोल्ड **) सही से दिखे
+        )
+        
+        # बोट चैट में आपको कन्फर्मेशन मिलना
+        await update.message.reply_text("✅ डील बटन्स और न्यू अपडेट हेडिंग के साथ चैनल पर पोस्ट हो गई है!")
 
 if __name__ == '__main__':
-    # अपना टेलीग्राम बोट टोकन यहाँ डालें
     BOT_TOKEN = "8601951285:AAE09-x_4Peuh3WSJN68U21iGFKsCuVnLLE"
     
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-    
-    # हर टेक्स्ट मैसेज को चेक करने के लिए हैंडलर
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    print("बॉट चालू हो गया है और लिंक्स की निगरानी कर रहा है...")
+    print("बॉट चालू है और बटन्स के साथ डील्स पोस्ट करने के लिए तैयार है...")
     app.run_polling()
