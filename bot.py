@@ -60,7 +60,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == '__main__':
     # अपना टेलीग्राम बोट टोकन यहाँ डालें
-    BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+    BOT_TOKEN = "8601951285:AAE09-x_4Peuh3WSJN68U21iGFKsCuVnLLE"
     
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     
