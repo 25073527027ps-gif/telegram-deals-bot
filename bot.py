@@ -75,5 +75,19 @@ def handle_links(message):
     ai_caption = get_sarvam_premium_caption(platform, user_text)
     affiliate_link = convert_to_affiliate(user_text)
     
-    final_post = f"{ai_caption}\n
+    final_post = f"{ai_caption}\n\n🔗 {affiliate_link}\n\n📢 Join: {CHANNEL_ID}"
+    
+    try:
+        # Posting to channel
+        bot.send_message(chat_id=CHANNEL_ID, text=final_post, parse_mode="Markdown")
+        bot.edit_message_text("🚀 Boom! Deal is live on @dealsoffreedom!", chat_id=message.chat.id, message_id=status_msg.message_id)
+    except Exception as e:
+        # Fallback in case Markdown syntax causes issue
+        bot.send_message(chat_id=CHANNEL_ID, text=final_post)
+        bot.edit_message_text("✅ Live on channel (Plain Text format)!", chat_id=message.chat.id, message_id=status_msg.message_id)
+
+if __name__ == '__main__':
+    logging.info("Bot is spinning up...")
+    # Infinity polling makes sure the bot never stops or crashes on server restarts
+    bot.infinity_polling(timeout=10, long_polling_timeout=5)
     
