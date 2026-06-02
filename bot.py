@@ -8,7 +8,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, filte
 
 # --- CONFIGURATION ---
 BOT_TOKEN = "8601951285:AAE09-x_4Peuh3WSJN68U21iGFKsCuVnLLE"
-SARVAM_API_KEY = "sk_6ahjv2o0_IIpdnV9xKVV7JpuebfkgbRE"
+SARVAM_API_KEY = "sk_7lrqry6r_hirqUMieRE3WoAmHhDS0f9Cw"
 CHANNEL_ID = "@dealsoffreedom"
 
 # Affiliate Tags (Apne actual tags se badlein)
