@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Railway से Variables उठाना
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-CHANNEL_ID = os.getenv("CHANNEL_ID")  # आपके चैनल की ID (जैसे: -100xxxxxxxxx)
+CHANNEL_ID = os.getenv("dealsoffreedom")  # आपके चैनल की ID (जैसे: -100xxxxxxxxx)
 
 # /start कमांड
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
