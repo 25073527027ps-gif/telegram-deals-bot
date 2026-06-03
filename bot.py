@@ -10,35 +10,39 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Railway से Variables उठाना
+# Railway से सिर्फ टेलीग्राम टोकन उठाना
 TELEGRAM_TOKEN = os.getenv("8881399321:AAE4i95uFHxuJ-6Pj9AChP006shdTffWV58")
-CHANNEL_ID = os.getenv("dealsoffreedom")  # आपके चैनल की ID (जैसे: -100xxxxxxxxx)
+
+# ⚠️ यहाँ अपने चैनल का यूज़रनेम डालें (@ लगाना ज़रूरी है)
+# उदाहरण: "@dealsoffreedom" या "@Deals_duniya_by_om" जो भी आपके चैनल का हैंडल हो
+CHANNEL_USERNAME = "@dealsoffreedom" 
 
 # /start कमांड
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "हेलो भाई! आपका डील्स बोट एक्टिव है।\n"
-        "अब आप मुझे जो भी प्रोडक्ट लिंक या डील भेजेंगे, मैं उसे सीधे आपके चैनल पर पोस्ट कर दूँगा!"
+        f"हेलो भाई! आपका डील्स बोट एक्टिव है।\n"
+        f"अब आप मुझे जो भी प्रोडक्ट लिंक या डील भेजेंगे, मैं उसे सीधे आपके चैनल {CHANNEL_USERNAME} पर पोस्ट कर दूँगा!"
     )
 
-# चैनल पर प्रोडक्ट/लिंक शेयर करने का फंक्शन
+# चैनल पर सीधे यूज़रनेम के ज़रिए पोस्ट करने का फंक्शन
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
     
     if not user_text:
         return
 
-    if not CHANNEL_ID:
-        await update.message.reply_text("❌ एरर: Railway में CHANNEL_ID सेट नहीं की गई है!")
-        return
-
     try:
-        # जो भी आप बोट को भेजेंगे, बोट उसे सीधे आपके चैनल पर भेज देगा
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=user_text)
+        # यहाँ बोट चैनल ID की जगह सीधे चैनल के यूज़रनेम पर मैसेज भेज रहा है
+        await context.bot.send_message(chat_id=CHANNEL_USERNAME, text=user_text)
         await update.message.reply_text("✅ डील सफलतापूर्वक चैनल पर शेयर कर दी गई है!")
     except Exception as e:
         logger.error(f"चैनल पर भेजने में एरर आया: {e}")
-        await update.message.reply_text(f"❌ चैनल पर पोस्ट नहीं हो पाया। एरर: {e}\n(चेक करें कि बोट चैनल में एडमिन है या नहीं)")
+        await update.message.reply_text(
+            f"❌ चैनल पर पोस्ट नहीं हो पाया।\n\n"
+            f"चेक करें कि:\n"
+            f"1. कोड में चैनल का यूज़रनेम ({CHANNEL_USERNAME}) सही है या नहीं।\n"
+            f"2. बोट आपके चैनल में Admin बना है या नहीं।"
+        )
 
 def main():
     if not TELEGRAM_TOKEN:
@@ -50,7 +54,7 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    logger.info("चैनल डील्स बोट स्टार्ट हो रहा है...")
+    logger.info("यूज़रनेम आधारित डील्स बोट स्टार्ट हो रहा है...")
     application.run_polling(drop_pending_updates=True)
 
 if __name__ == '__main__':
