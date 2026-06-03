@@ -11,7 +11,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Railway से Variables उठाना
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_TOKEN = os.getenv("8881399321:AAE4i95uFHxuJ-6Pj9AChP006shdTffWV58")
 CHANNEL_ID = os.getenv("dealsoffreedom")  # आपके चैनल की ID (जैसे: -100xxxxxxxxx)
 
 # /start कमांड
